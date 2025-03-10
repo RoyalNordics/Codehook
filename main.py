@@ -16,3 +16,14 @@ def get_config():
         "openai_key": "your-openai-api-key",
         "claude_key": "your-claude-api-key"
     }
+
+# Enable CORS (Cross-Origin Resource Sharing)
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Change "*" to your frontend domain for security
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
