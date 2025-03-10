@@ -5,6 +5,7 @@ langchain
 openai
 pydantic
 anthropic
-torch
-torchvision
-torchaudio
+torch==2.6.0+cpu
+torchvision==0.21.0+cpu
+torchaudio==2.6.0+cpu
+-f https://download.pytorch.org/whl/cpu
