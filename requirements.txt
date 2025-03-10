@@ -5,6 +5,3 @@ langchain
 openai
 pydantic
 anthropic
-torch
-torchvision
-torchaudio
