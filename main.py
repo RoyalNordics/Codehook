@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
@@ -12,6 +13,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Store logs of received webhook requests
+logs = []
+
+@app.get("/")
+def root():
+    return {"message": "FastAPI is running!"}
+
 @app.get("/config")
 def get_config():
     return {
@@ -20,21 +28,16 @@ def get_config():
         "ai_platform": "openai",
     }  # Removed API keys for security
 
-
-from fastapi import Request
-from fastapi.responses import JSONResponse
-
 @app.post("/api/webhook")
 async def webhook(request: Request):
     try:
         data = await request.json()
         message = data.get("message", "")
-        
-        # Log the received message
+
+        # Store the received message in logs
+        logs.append(data)
         print(f"Received webhook message: {message}")
-        
-        # Here you would process the message with LangChain
-        # For now, we'll just return a simple response
+
         return JSONResponse({
             "status": "success", 
             "received": message,
@@ -46,3 +49,7 @@ async def webhook(request: Request):
             status_code=500,
             content={"error": str(e)}
         )
+
+@app.get("/logs")
+def get_logs():
+    return logs if logs else {"details": "No logs available"}
