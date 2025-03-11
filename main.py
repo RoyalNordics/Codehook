@@ -53,3 +53,16 @@ async def webhook(request: Request):
 @app.get("/logs")
 def get_logs():
     return logs if logs else {"details": "No logs available"}
+
+from fastapi import Request
+
+@app.post("/receive-message")
+async def receive_message(request: Request):
+    data = await request.json()
+    message = data.get("message", "")
+
+    if message.startswith("Hey CodeHook"):
+        print(f"Received AI message: {message}")
+        return {"status": "received", "message": message}
+    
+    return {"status": "ignored", "message": message}
