@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from backend.langchain_handler import CodeHookHandler
 from dotenv import load_dotenv
+import requests
 
 #Load .env file
 load_dotenv()
@@ -45,15 +46,15 @@ def get_config():
 async def webhook(request: Request):
     try:
         data = await request.json()
-        message = data.get("message", "")
+        generated_text = data.get("generated_text", "")  # Changed to generated_text
 
         # Store the received message in logs
         logs.append(data)
-        print(f"Received webhook message: {message}")
+        print(f"Received webhook message: {generated_text}")
 
         return JSONResponse({
             "status": "success",
-            "received": message,
+            "received": generated_text,
             "generatedCode": "console.log('Hello from CodeHook!');"
         })
     except Exception as e:
@@ -99,7 +100,8 @@ async def sendData(request: Request):
 
   WEBHOOK_URL = os.getenv("WEBHOOK_URL")
   AI_API_KEY = os.getenv("AI_API_KEY")
-  codeOrPrompt = data.get("codeOrPrompt", "")
+  #Instead of codeorPrompt, we get generated_text!
+  codeOrPrompt = data.get("generated_text", "")
 
   #Construct payload
   payload = {

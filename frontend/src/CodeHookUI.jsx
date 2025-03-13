@@ -4,15 +4,15 @@ import "./index.css";
 const CodeHookUI = () => {
   // Configuration state - Remove these from here
   // const [webhookUrl, setWebhookUrl] = useState("https://codehook.onrender.com/api/webhook");
-  // const [apiKey, setApiKey] = useState("");
-  // const [provider, setProvider] = useState("openai"); // openai, anthropic, etc.
-  const [isConfigured, setIsConfigured] = useState(false);
+  // const [apiKey, setApiKey = useState("");
+  // const [provider, setProvider = useState("openai"); // openai, anthropic, etc.
+  const [isConfigured, setIsConfigured = useState(false);
   
   // Example logs/history
-  const [logs, setLogs] = useState([]);
+  const [logs, setLogs = useState([]);
 
   // New State for Code/Prompt input and display
-  const [codeOrPrompt, setCodeOrPrompt] = useState("");
+  const [codeOrPrompt, setCodeOrPrompt = useState("");
 
   useEffect(() => {
     // Load saved configuration if available - remove localstorage
@@ -87,11 +87,12 @@ const CodeHookUI = () => {
     const apiKey = "test";
     const provider = "test";
 
-    const config = {
+    //Changed from the word config, to what actually happens
+    const payload = {
       "webhook_url": webhook_url,
       "apiKey": apiKey,
       "provider": provider,
-      "codeOrPrompt": codeOrPrompt
+      "generated_text": codeOrPrompt //Changed to ""generate_text:  
     };
 
     try {
@@ -100,7 +101,7 @@ const CodeHookUI = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(config),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {

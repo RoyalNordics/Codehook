@@ -2,25 +2,45 @@ import React, { useState, useEffect } from "react";
 import "./index.css";
 
 const CodeHookUI = () => {
-  // Configuration state
-  const [webhookUrl, setWebhookUrl] = useState("https://codehook.onrender.com/api/webhook");
-  const [apiKey, setApiKey] = useState("");
-  const [provider, setProvider] = useState("openai"); // openai, anthropic, etc.
+  // Configuration state - Remove these from here
+  // const [webhookUrl, setWebhookUrl] = useState("https://codehook.onrender.com/api/webhook");
+  // const [apiKey, setApiKey] = useState("");
+  // const [provider, setProvider] = useState("openai"); // openai, anthropic, etc.
   const [isConfigured, setIsConfigured] = useState(false);
   
   // Example logs/history
   const [logs, setLogs] = useState([]);
-  
+
+  // New State for Code/Prompt input and display
+  const [codeOrPrompt, setCodeOrPrompt] = useState("");
+
   useEffect(() => {
-    // Load saved configuration if available
-    const savedConfig = localStorage.getItem("codehookConfig");
-    if (savedConfig) {
-      const config = JSON.parse(savedConfig);
-      setWebhookUrl(config.webhookUrl || "");
-      setApiKey(config.apiKey || "");
-      setProvider(config.provider || "openai");
-      setIsConfigured(true);
-    }
+    // Load saved configuration if available - remove localstorage
+    // const savedConfig = localStorage.getItem("codehookConfig");
+    // if (savedConfig) {
+    //   const config = JSON.parse(savedConfig);
+    //   setWebhookUrl(config.webhookUrl || "");
+    //   setApiKey(config.apiKey || "");
+    //   setProvider(config.provider || "openai");
+    //   setIsConfigured(true);
+    // }
+
+    //In a real implementation, you want to contact the backend to load data, so the keys are kept private
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch("/config"); // Assuming you have a /config endpoint on your backend
+        const data = await response.json();
+        //Update local variables
+        // setWebhookUrl(data.webhook_url || ""); # The variables have been removed
+        // setApiKey(data.apiKey || ""); # The variables have been removed
+        // setProvider(data.provider || "openai"); # The variables have been removed
+        setIsConfigured(true);
+      } catch (error) {
+        console.error("Error loading configuration:", error);
+      }
+    };
+
+    fetchConfig();
     
     // Load mock logs for demonstration
     const mockLogs = [
@@ -41,12 +61,13 @@ const CodeHookUI = () => {
   }, []);
   
   const saveConfiguration = () => {
-    const config = {
-      webhookUrl,
-      apiKey,
-      provider
-    };
-    localStorage.setItem("codehookConfig", JSON.stringify(config));
+    //We will remove this function.  Since we are not calling setWebhookUrl or setApiKey
+    // const config = {
+    //   webhookUrl,
+    //   apiKey,
+    //   provider
+    // };
+    // localStorage.setItem("codehookConfig", JSON.stringify(config));
     setIsConfigured(true);
     
     // In a real implementation, you might also want to test the connection
@@ -57,6 +78,40 @@ const CodeHookUI = () => {
     // This would generate the extension code with the configured webhook URL
     // For now, we just show it has been clicked
     alert("Extension code generated! In a real implementation, this would create a downloadable extension with your webhook URL configured.");
+  };
+
+  //Add Send Function here
+  const sendCode = async () => {
+    //Get value from the Code area
+    const webhook_url = "test";
+    const apiKey = "test";
+    const provider = "test";
+
+    const config = {
+      "webhook_url": webhook_url,
+      "apiKey": apiKey,
+      "provider": provider,
+      "codeOrPrompt": codeOrPrompt
+    };
+
+    try {
+      const response = await fetch("/sendData", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(config),
+      });
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+
+      const data = await response.json();
+      console.log("Data received:", data);
+    } catch (error) {
+      console.error("There was a problem with the fetch operation:", error);
+    }
   };
 
   return (
@@ -122,72 +177,36 @@ const CodeHookUI = () => {
               
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="webhook" className="text-[#93adc8] text-sm font-medium">
-                    Webhook URL
-                  </label>
-                  <input
-                    type="text"
-                    id="webhook"
-                    className="px-4 py-3 bg-[#111a22] border border-[#344d65] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#1980e6] w-full"
-                    placeholder="https://your-webhook-url.com/api/webhook"
-                    value={webhookUrl}
-                    onChange={(e) => setWebhookUrl(e.target.value)}
-                  />
-                  <p className="text-[#93adc8] text-xs">
-                    This is where CodeHook will send AI chat prompts. Your server should be running at this URL.
-                  </p>
-                </div>
-                
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="apiKey" className="text-[#93adc8] text-sm font-medium">
-                    API Key (Optional)
-                  </label>
-                  <input
-                    type="password"
-                    id="apiKey"
-                    className="px-4 py-3 bg-[#111a22] border border-[#344d65] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#1980e6] w-full"
-                    placeholder="Your API key"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                  />
-                  <p className="text-[#93adc8] text-xs">
-                    If your webhook requires authentication, provide your API key here.
-                  </p>
-                </div>
-                
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="provider" className="text-[#93adc8] text-sm font-medium">
-                    AI Provider
-                  </label>
-                  <select
-                    id="provider"
-                    className="px-4 py-3 bg-[#111a22] border border-[#344d65] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#1980e6] w-full"
-                    value={provider}
-                    onChange={(e) => setProvider(e.target.value)}
-                  >
-                    <option value="openai">OpenAI (ChatGPT)</option>
-                    <option value="anthropic">Anthropic (Claude)</option>
-                    <option value="both">Both Providers</option>
-                  </select>
-                  <p className="text-[#93adc8] text-xs">
-                    Select which AI chat platforms you want to use with CodeHook.
-                  </p>
-                </div>
+                    <label htmlFor="apiKey" className="text-[#93adc8] text-sm font-medium">
+                      Code
+                    </label>
+                    <input
+                      type="password"
+                      id="code"
+                      className="px-4 py-3 bg-[#111a22] border border-[#344d65] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#1980e6] w-full"
+                      placeholder="Your code"
+                      value={codeOrPrompt}
+                      onChange={(e) => setCodeOrPrompt(e.target.value)}
+                    />
+                    <p className="text-[#93adc8] text-xs">
+                      Paste in your code
+                    </p>
+                  </div>
                 
                 <div className="flex gap-4 mt-4">
                   <button
                     className="flex cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-5 bg-[#1980e6] text-white text-base font-bold leading-normal tracking-[0.015em]"
-                    onClick={saveConfiguration}
+                    onClick={sendCode}
                   >
-                    Save Configuration
+                    Send Code
                   </button>
                   
-                  <button
+                  {/* <button
                     className="flex cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-5 bg-[#243647] text-white text-base font-bold leading-normal tracking-[0.015em]"
                     onClick={generateExtensionCode}
                   >
                     Generate Extension
-                  </button>
+                  </button> */}
                 </div>
               </div>
             </div>
@@ -236,9 +255,7 @@ const CodeHookUI = () => {
                         <span className="text-[#93adc8] text-xs">
                           {new Date(log.timestamp).toLocaleString()}
                         </span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          log.status === "completed" ? "bg-[#0d3320] text-[#4ade80]" : "bg-[#3a2232] text-[#e33e5a]"
-                        }`}>
+                        <span className={}>
                           {log.status}
                         </span>
                       </div>
