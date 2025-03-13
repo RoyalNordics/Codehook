@@ -1,8 +1,12 @@
+import os
+import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from backend.langchain_handler import CodeHookHandler
 
 app = FastAPI()
+codehook_handler = CodeHookHandler()
 
 # Enable CORS (Security: Change "*" to your frontend domain)
 app.add_middleware(
@@ -54,15 +58,28 @@ async def webhook(request: Request):
 def get_logs():
     return logs if logs else {"details": "No logs available"}
 
-from fastapi import Request
-
 @app.post("/receive-message")
 async def receive_message(request: Request):
     data = await request.json()
     message = data.get("message", "")
+    preferred_filename = data.get("filename", None)
+    preferred_path = data.get("path", None)
 
-    if message.startswith("Hey CodeHook"):
-        print(f"Received AI message: {message}")
-        return {"status": "received", "message": message}
+    # Use our handler to process the message
+    result = codehook_handler.process_ai_message(
+        message, 
+        preferred_filename, 
+        preferred_path
+    )
     
-    return {"status": "ignored", "message": message}
+    if result["status"] == "success":
+        print(f"Successfully wrote code to {result['file_path']}")
+        return {
+            "status": "success", 
+            "message": f"Code written to {result['file_path']}", 
+            "file_path": result['file_path']
+        }
+    elif result["status"] == "ignored":
+        return {"status": "ignored", "message": "Message doesn't contain CodeHook trigger"}
+    else:
+        return {"status": "error", "message": result["message"]}

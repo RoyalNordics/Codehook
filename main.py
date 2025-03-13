@@ -4,6 +4,10 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from backend.langchain_handler import CodeHookHandler
+from dotenv import load_dotenv
+
+#Load .env file
+load_dotenv()
 
 app = FastAPI()
 codehook_handler = CodeHookHandler()
@@ -11,11 +15,16 @@ codehook_handler = CodeHookHandler()
 # Enable CORS (Security: Change "*" to your frontend domain)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Get secrets from Environmental variables
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+AI_API_KEY = os.getenv("AI_API_KEY")
+AI_PLATFORM = os.getenv("AI_PLATFORM")
 
 # Store logs of received webhook requests
 logs = []
@@ -26,10 +35,10 @@ def root():
 
 @app.get("/config")
 def get_config():
+    #Return backend configs
     return {
-        "webhook_url": "https://your-webhook-url.onrender.com",
-        "allowed_chat_id": "1234567890",
-        "ai_platform": "openai",
+        "webhook_url": WEBHOOK_URL,
+        "ai_platform": AI_PLATFORM,
     }  # Removed API keys for security
 
 @app.post("/api/webhook")
@@ -43,7 +52,7 @@ async def webhook(request: Request):
         print(f"Received webhook message: {message}")
 
         return JSONResponse({
-            "status": "success", 
+            "status": "success",
             "received": message,
             "generatedCode": "console.log('Hello from CodeHook!');"
         })
@@ -67,19 +76,61 @@ async def receive_message(request: Request):
 
     # Use our handler to process the message
     result = codehook_handler.process_ai_message(
-        message, 
-        preferred_filename, 
+        message,
+        preferred_filename,
         preferred_path
     )
-    
+
     if result["status"] == "success":
         print(f"Successfully wrote code to {result['file_path']}")
         return {
-            "status": "success", 
-            "message": f"Code written to {result['file_path']}", 
+            "status": "success",
+            "message": f"Code written to {result['file_path']}",
             "file_path": result['file_path']
         }
     elif result["status"] == "ignored":
         return {"status": "ignored", "message": "Message doesn't contain CodeHook trigger"}
     else:
         return {"status": "error", "message": result["message"]}
+
+@app.post("/sendData")
+async def sendData(request: Request):
+  data = await request.json()
+
+  WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+  AI_API_KEY = os.getenv("AI_API_KEY")
+  codeOrPrompt = data.get("codeOrPrompt", "")
+
+  #Construct payload
+  payload = {
+    "generated_text": codeOrPrompt,  # Include the generated text and the API key
+    "api_key": AI_API_KEY
+  }
+
+  try:
+      # Make the POST request
+      response = requests.post(WEBHOOK_URL, json=payload)
+
+      # Raise an exception for bad status codes
+      response.raise_for_status()
+
+      # Parse the JSON response
+      json_response = response.json()
+
+      # Handle the successful response
+      print("Data sent successfully!")
+      print(f"Response: {json_response}")
+
+      # Return the JSON response
+      return json_response
+
+  except requests.exceptions.RequestException as e:
+      # Handle any request-related errors
+      error_message = f"Request failed: {e}"
+      print(error_message)
+      return {"status": "error", "message": error_message}
+  except Exception as e:
+      # Handle any other exceptions
+      error_message = f"An unexpected error occurred: {e}"
+      print(error_message)
+      return {"status": "error", "message": error_message}
